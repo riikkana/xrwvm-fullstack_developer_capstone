@@ -101,17 +101,24 @@ def get_dealerships(request, state="All"):
     return JsonResponse({"status":200,"dealers":dealerships})
 
 # Create a `get_dealer_reviews` view to render the reviews of a dealer
-def get_dealer_reviews(request,dealer_id):
-    if(dealer_id):
-        endpoint = "/fetchDealer/dealer/"+str(dealer_id)
+def get_dealer_reviews(request, dealer_id):
+    if dealer_id:
+        endpoint = f"/fetchDealer/dealer/{dealer_id}"  # F-String helpottaa luettavuutta
         reviews = get_request(endpoint)
-        for review_detail in reviews:
-            response = analyze_review_sentiments(review_detail['review'])
-            print(response)
-            review_detail['sentiment'] = response['sentiment']
-        return JsonResponse({"status":200,"reviews":reviews})
+        
+        if reviews:  # Tarkista, että saatiin arvot palautuksesta
+            for review_detail in reviews:
+                response = analyze_review_sentiments(review_detail.get('review', ''))  # Käytä get-metodia
+                if response:  # Tarkista, että response ei ole tyhjä
+                    review_detail['sentiment'] = response.get('sentiment', 'neutral')  # Varmista, että sentiment avain löytyy
+                else:
+                    review_detail['sentiment'] = 'unknown'  # Aseta oletusarvo virheiden varalle
+            return JsonResponse({"status": 200, "reviews": reviews})
+        else:
+            return JsonResponse({"status": 404, "message": "No reviews found"})
     else:
-        return JsonResponse({"status":400,"dealers":"Bad request"})
+        return JsonResponse({"status": 400, "message": "Bad request: dealer_id missing"})
+
 
 
 # Create a `get_dealer_details` view to render the dealer details
